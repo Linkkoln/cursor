@@ -8,9 +8,11 @@
 """
 import logging
 import sys
+import asyncio
 from typing import Optional, Dict, List
-from aiogram import Router
+from aiogram import Router, Bot
 from aiogram.types import Message
+from aiogram.enums import ChatAction
 from aiogram.filters import Command
 from aiogram.exceptions import TelegramNetworkError, TelegramAPIError
 
@@ -148,10 +150,32 @@ async def chatgpt_handler(message: Message) -> None:
     # Отправляем сообщение "Думаю..." пока обрабатывается запрос
     thinking_message = await message.answer("🤔 Думаю...")
     
+    # Получаем объект бота для отправки typing action
+    bot: Bot = message.bot
+    
+    # Функция для периодической отправки индикатора "бот печатает"
+    async def send_typing_periodically():
+        """Периодически отправляет индикатор 'бот печатает' каждые 5 секунд."""
+        while True:
+            try:
+                await bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
+                await asyncio.sleep(5)  # Отправляем каждые 5 секунд
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Ошибка при отправке typing action: {e}")
+                break
+    
+    # Запускаем задачу для периодической отправки typing action
+    typing_task = asyncio.create_task(send_typing_periodically())
+    
     try:
         # Получаем историю разговора для этого пользователя
         history = conversation_storage.get_history(user_id)
         logger.debug(f"История разговора для пользователя {user_id}: {len(history)} сообщений")
+        
+        # Отправляем индикатор "бот печатает" перед запросом
+        await bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
         
         # Отправляем запрос к LLM
         logger.info(f"Отправка запроса к LLM для пользователя {user_id}")
@@ -166,6 +190,13 @@ async def chatgpt_handler(message: Message) -> None:
         conversation_storage.add_message(user_id, "user", message.text)
         conversation_storage.add_message(user_id, "assistant", response)
         
+        # Останавливаем задачу отправки typing action
+        typing_task.cancel()
+        try:
+            await typing_task
+        except asyncio.CancelledError:
+            pass
+        
         # Удаляем сообщение "Думаю..." и отправляем ответ
         await thinking_message.delete()
         await message.answer(
@@ -174,6 +205,13 @@ async def chatgpt_handler(message: Message) -> None:
         )
     
     except Exception as e:
+        # Останавливаем задачу отправки typing action в случае ошибки
+        typing_task.cancel()
+        try:
+            await typing_task
+        except asyncio.CancelledError:
+            pass
+        
         # Удаляем сообщение "Думаю..." в случае ошибки
         try:
             await thinking_message.delete()
