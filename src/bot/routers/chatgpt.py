@@ -161,9 +161,23 @@ async def chatgpt_handler(message: Message) -> None:
         except:
             pass
         
-        logger.error(f"Ошибка при обработке запроса к LLM: {e}")
+        # Логируем полную информацию об ошибке для отладки
+        logger.error(f"Ошибка при обработке запроса к LLM: {e}", exc_info=True)
+        
+        # Формируем понятное сообщение об ошибке
+        error_message = str(e)
+        if "лимит" in error_message.lower() or "limit" in error_message.lower():
+            # Если это ошибка лимита, сообщение уже содержит детали
+            user_message = error_message
+        else:
+            # Для других ошибок показываем общее сообщение
+            user_message = (
+                f"❌ Произошла ошибка при обращении к AI.\n\n"
+                f"Детали: {error_message}\n\n"
+                "Попробуйте еще раз или вернитесь в главное меню."
+            )
+        
         await message.answer(
-            f"❌ Произошла ошибка при обращении к AI: {str(e)}\n\n"
-            "Попробуйте еще раз или вернитесь в главное меню.",
+            user_message,
             reply_markup=get_chatgpt_menu()
         )
