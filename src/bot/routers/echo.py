@@ -63,6 +63,11 @@ async def cmd_back_to_menu(message: Message) -> None:
 
 @echo_router.message()
 async def echo_handler(message: Message) -> None:
+    # Проверяем, не находится ли пользователь в режиме ChatGPT
+    # Если да, то это сообщение обработает chatgpt_router
+    from bot.routers.chatgpt import conversation_history
+    if message.from_user.id in conversation_history:
+        return
     """Обработчик всех остальных сообщений - повторяет их обратно.
     
     Эта функция обрабатывает ВСЕ сообщения, кроме команды /start.

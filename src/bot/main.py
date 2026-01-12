@@ -23,6 +23,7 @@ from bot.config import BOT_TOKEN
 from bot.routers.start import start_router
 from bot.routers.help import help_router
 from bot.routers.echo import echo_router
+from bot.routers.chatgpt import chatgpt_router
 
 # Настраиваем логирование (запись информации о работе программы)
 # Логи - это как дневник бота: он записывает, что происходит
@@ -58,10 +59,11 @@ async def main() -> None:
     dp = Dispatcher()
     
     # Подключаем роутеры к диспетчеру
-    # Порядок важен: сначала обрабатываются команды (start, help),
-    # потом кнопки меню, и в конце - обычные сообщения (echo)
+    # Порядок важен: сначала обрабатываются команды (start, help, chatgpt),
+    # потом кнопки меню, и в конце - обычные сообщения (echo, chatgpt)
     dp.include_router(start_router)
     dp.include_router(help_router)
+    dp.include_router(chatgpt_router)
     dp.include_router(echo_router)
     
     # Устанавливаем команды меню бота
@@ -70,6 +72,7 @@ async def main() -> None:
     commands = [
         BotCommand(command="start", description="Запустить бота и показать меню"),
         BotCommand(command="help", description="Показать справку по использованию бота"),
+        BotCommand(command="chatgpt", description="Активировать режим ChatGPT"),
     ]
     await bot.set_my_commands(commands)
     
@@ -92,6 +95,11 @@ async def main() -> None:
     finally:
         # В любом случае закрываем соединение с Telegram (вешаем трубку)
         await bot.session.close()
+        
+        # Закрываем сессию LLM сервиса, если она была создана
+        from bot.routers.chatgpt import llm_service
+        if llm_service:
+            await llm_service.close()
 
 
 if __name__ == "__main__":

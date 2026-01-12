@@ -20,3 +20,7 @@ BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
 # В этом случае останавливаем программу и показываем ошибку
 if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN не установлен в переменных окружения")
+
+# API ключ для OpenRouter (для режима ChatGPT)
+# Это необязательный параметр - если его нет, режим ChatGPT не будет работать
+OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")

@@ -3,6 +3,7 @@
 Этот сервис содержит бизнес-логику обработки эхо-сообщений.
 Он не зависит от aiogram и Telegram, поэтому его легко тестировать.
 """
+from typing import Optional
 
 
 class EchoService:
@@ -13,7 +14,7 @@ class EchoService:
     """
     
     @staticmethod
-    def process_message(text: str | None) -> str:
+    def process_message(text: Optional[str]) -> str:
         """Обрабатывает текстовое сообщение и возвращает ответ.
         
         Если сообщение является числом (целым или дробным), возвращает число + 1.
@@ -49,7 +50,7 @@ class EchoService:
                 return text
     
     @staticmethod
-    def is_text_message(text: str | None) -> bool:
+    def is_text_message(text: Optional[str]) -> bool:
         """Проверяет, является ли сообщение текстовым.
         
         Args:
