@@ -128,3 +128,102 @@ class TestEchoService:
         
         # Проверка: должно быть False
         assert result is False
+    
+    def test_process_message_with_integer(self):
+        """Тест: обработка целого числа.
+        
+        Проверяем, что если пользователь отправил целое число,
+        бот возвращает это число + 1.
+        """
+        # Подготовка: целое число
+        test_text = "5"
+        
+        # Действие: обрабатываем сообщение
+        result = EchoService.process_message(test_text)
+        
+        # Проверка: результат должен быть число + 1
+        assert result == "6"
+    
+    def test_process_message_with_negative_integer(self):
+        """Тест: обработка отрицательного целого числа.
+        
+        Проверяем, что отрицательные числа тоже обрабатываются правильно.
+        """
+        # Подготовка: отрицательное целое число
+        test_text = "-10"
+        
+        # Действие: обрабатываем сообщение
+        result = EchoService.process_message(test_text)
+        
+        # Проверка: результат должен быть число + 1
+        assert result == "-9"
+    
+    def test_process_message_with_zero(self):
+        """Тест: обработка нуля.
+        
+        Проверяем, что ноль обрабатывается правильно.
+        """
+        # Подготовка: ноль
+        test_text = "0"
+        
+        # Действие: обрабатываем сообщение
+        result = EchoService.process_message(test_text)
+        
+        # Проверка: результат должен быть 1
+        assert result == "1"
+    
+    def test_process_message_with_float(self):
+        """Тест: обработка дробного числа.
+        
+        Проверяем, что дробные числа тоже обрабатываются правильно.
+        """
+        # Подготовка: дробное число
+        test_text = "3.5"
+        
+        # Действие: обрабатываем сообщение
+        result = EchoService.process_message(test_text)
+        
+        # Проверка: результат должен быть число + 1
+        assert result == "4.5"
+    
+    def test_process_message_with_float_with_spaces(self):
+        """Тест: обработка дробного числа с пробелами.
+        
+        Проверяем, что пробелы вокруг числа игнорируются.
+        """
+        # Подготовка: дробное число с пробелами
+        test_text = "  2.7  "
+        
+        # Действие: обрабатываем сообщение
+        result = EchoService.process_message(test_text)
+        
+        # Проверка: результат должен быть число + 1
+        assert result == "3.7"
+    
+    def test_process_message_with_text_not_number(self):
+        """Тест: обработка текста, который не является числом.
+        
+        Проверяем, что обычный текст возвращается как есть (эхо).
+        """
+        # Подготовка: текст, который не число
+        test_text = "Привет, бот!"
+        
+        # Действие: обрабатываем сообщение
+        result = EchoService.process_message(test_text)
+        
+        # Проверка: результат должен быть тот же текст (эхо)
+        assert result == test_text
+    
+    def test_process_message_with_text_containing_number(self):
+        """Тест: обработка текста, содержащего число.
+        
+        Проверяем, что текст с числом внутри не считается числом.
+        """
+        # Подготовка: текст с числом внутри
+        test_text = "Мне 25 лет"
+        
+        # Действие: обрабатываем сообщение
+        result = EchoService.process_message(test_text)
+        
+        # Проверка: результат должен быть тот же текст (эхо)
+        assert result == test_text
