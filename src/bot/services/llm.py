@@ -240,6 +240,20 @@ class LLMService:
                     # Возвращаем None, чтобы вызвающий код переключился на следующую модель
                     return None
                 
+                elif response.status == 404:
+                    # Модель не найдена - переключаемся на следующую модель
+                    current_model = self.model_selector.get_current_model()
+                    try:
+                        error_data = await response.json()
+                        error_message = error_data.get("error", {}).get("message", "Модель не найдена")
+                        logger.warning(
+                            f"Модель {current_model} не найдена (404): {error_message}. Переключаемся на следующую."
+                        )
+                    except:
+                        logger.warning(f"Модель {current_model} не найдена (404). Переключаемся на следующую.")
+                    # Возвращаем None для переключения модели
+                    return None
+                
                 else:
                     # Читаем текст ошибки для детальной информации
                     try:
@@ -261,6 +275,8 @@ class LLMService:
                                 f"Ошибка API OpenRouter (статус {response.status}, тип: {error_type}): {error_message}",
                                 extra={"status": response.status, "error_json": error_json}
                             )
+                            # Для ошибок, отличных от 404/429, возвращаем сообщение об ошибке
+                            # Но не переключаем модель, так как это может быть временная проблема
                             return f"Ошибка при обращении к AI: {error_message}"
                         else:
                             logger.error(

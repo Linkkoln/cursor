@@ -28,13 +28,15 @@ OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
 # Список бесплатных моделей для использования (fallback при превышении лимита)
 # Вариант :free означает бесплатную модель с низкими лимитами запросов
 # Модели перечислены в порядке приоритета использования
+# ВАЖНО: Проверяйте доступность моделей на https://openrouter.ai/models
 FREE_MODELS = [
     "meta-llama/llama-3.2-3b-instruct:free",
     "mistralai/mistral-7b-instruct:free",
-    "deepseek/deepseek-chat:free",
     "google/gemma-2-2b-it:free",
     "qwen/qwen-2-7b-instruct:free",
     "microsoft/phi-3-mini-128k-instruct:free",
+    # Удалены неработающие модели:
+    # "deepseek/deepseek-chat:free" - возвращает 404 (No endpoints found)
 ]
 
 # Модель по умолчанию (первая из списка бесплатных)
