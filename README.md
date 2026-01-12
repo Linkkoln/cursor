@@ -33,17 +33,25 @@ OPENROUTER_API_KEY=ваш_ключ_от_openrouter
 
 ## Запуск
 
+**⚠️ ВАЖНО:** Не запускайте отдельные файлы напрямую (например, `python src/bot/routers/chatgpt.py`)!
+
 Запустите бота одним из способов:
 
 ```bash
-python -m src.bot.main
+# Способ 1 (рекомендуется)
+python -m src.bot
 ```
 
 или
 
 ```bash
-python -m src.bot
+# Способ 2
+python -m src.bot.main
 ```
+
+**Почему нельзя запускать файлы напрямую?**
+- Python не сможет найти модули (`ModuleNotFoundError: No module named 'bot'`)
+- Бот должен запускаться как модуль, чтобы правильно настроить пути импорта
 
 ## Переменные окружения
 

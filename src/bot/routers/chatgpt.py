@@ -2,16 +2,30 @@
 
 Когда пользователь активирует режим ChatGPT, бот начинает отвечать
 на вопросы как языковая модель через OpenRouter.ai.
+
+ВНИМАНИЕ: Этот файл нельзя запускать напрямую!
+Запускайте бота командой: python -m src.bot
 """
 import logging
+import sys
 from typing import Optional, Dict, List
 from aiogram import Router
 from aiogram.types import Message
 from aiogram.filters import Command
 from aiogram.exceptions import TelegramNetworkError, TelegramAPIError
 
+# Защита от прямого запуска файла
+if __name__ == "__main__":
+    print("❌ Ошибка: Этот файл нельзя запускать напрямую!")
+    print("✅ Правильный способ запуска бота:")
+    print("   python -m src.bot")
+    print("   или")
+    print("   python -m src.bot.main")
+    sys.exit(1)
+
 from bot.keyboards.common import get_main_menu, get_chatgpt_menu
 from bot.services.llm import LLMService
+from bot.services.conversation_storage import ConversationStorage
 from bot.config import OPENROUTER_API_KEY
 
 # Создаём объект для записи логов (дневник)
@@ -20,11 +34,13 @@ logger = logging.getLogger(__name__)
 # Создаём роутер для обработки команды /chatgpt
 chatgpt_router = Router()
 
-# Словарь для хранения истории разговоров пользователей
-# Ключ - ID пользователя, значение - список сообщений
-conversation_history: Dict[int, List[dict]] = {}
+# Создаём хранилище истории разговоров (вместо глобального словаря)
+# Это позволяет легко заменить на базу данных в будущем
+conversation_storage = ConversationStorage()
 
 # Создаём экземпляр сервиса LLM (если API ключ установлен)
+# Используем Dependency Injection через глобальную переменную
+# В production можно использовать DI-контейнер
 llm_service: Optional[LLMService] = None
 if OPENROUTER_API_KEY:
     llm_service = LLMService(api_key=OPENROUTER_API_KEY)
@@ -50,9 +66,12 @@ async def cmd_chatgpt(message: Message) -> None:
             )
             return
         
-        # Очищаем историю разговора для этого пользователя
+        # Активируем режим ChatGPT для этого пользователя
+        # Создаём пустую историю, чтобы отметить пользователя как активного в режиме ChatGPT
         user_id = message.from_user.id
-        conversation_history[user_id] = []
+        conversation_storage.clear_history(user_id)  # Очищаем старую историю, если была
+        # Создаём пустую историю, чтобы has_conversation() возвращал True
+        conversation_storage.update_history(user_id, [])
         
         # Отправляем сообщение об активации режима
         await message.answer(
@@ -77,7 +96,7 @@ async def cmd_chatgpt_button(message: Message) -> None:
     await cmd_chatgpt(message)
 
 
-@chatgpt_router.message(lambda message: message.text == "⬅️ Назад в меню" and message.from_user.id in conversation_history)
+@chatgpt_router.message(lambda message: message.text == "⬅️ Назад в меню" and conversation_storage.has_conversation(message.from_user.id))
 async def cmd_back_from_chatgpt(message: Message) -> None:
     """Обработчик кнопки "Назад в меню" из режима ChatGPT.
     
@@ -87,8 +106,7 @@ async def cmd_back_from_chatgpt(message: Message) -> None:
     try:
         # Очищаем историю разговора для этого пользователя
         user_id = message.from_user.id
-        if user_id in conversation_history:
-            del conversation_history[user_id]
+        conversation_storage.clear_history(user_id)
         
         await message.answer(
             "🏠 Вы вернулись в главное меню!",
@@ -107,7 +125,7 @@ async def chatgpt_handler(message: Message) -> None:
     """
     # Проверяем, что пользователь находится в режиме ChatGPT
     user_id = message.from_user.id
-    if user_id not in conversation_history:
+    if not conversation_storage.has_conversation(user_id):
         # Если пользователь не в режиме ChatGPT, игнорируем сообщение
         return
     
@@ -132,20 +150,21 @@ async def chatgpt_handler(message: Message) -> None:
     
     try:
         # Получаем историю разговора для этого пользователя
-        history = conversation_history.get(user_id, [])
+        history = conversation_storage.get_history(user_id)
+        logger.debug(f"История разговора для пользователя {user_id}: {len(history)} сообщений")
         
         # Отправляем запрос к LLM
+        logger.info(f"Отправка запроса к LLM для пользователя {user_id}")
         response = await llm_service.get_response(
             user_message=message.text,
             conversation_history=history
         )
+        logger.info(f"Получен ответ от LLM для пользователя {user_id}, длина: {len(response)} символов")
         
         # Обновляем историю разговора
         # Добавляем сообщение пользователя и ответ бота
-        conversation_history[user_id] = history + [
-            {"role": "user", "content": message.text},
-            {"role": "assistant", "content": response}
-        ]
+        conversation_storage.add_message(user_id, "user", message.text)
+        conversation_storage.add_message(user_id, "assistant", response)
         
         # Удаляем сообщение "Думаю..." и отправляем ответ
         await thinking_message.delete()

@@ -59,11 +59,13 @@ async def main() -> None:
     dp = Dispatcher()
     
     # Подключаем роутеры к диспетчеру
-    # Порядок важен: сначала обрабатываются команды (start, help, chatgpt),
-    # потом кнопки меню, и в конце - обычные сообщения (echo, chatgpt)
+    # Порядок ОЧЕНЬ важен: aiogram обрабатывает роутеры сверху вниз
+    # 1. Сначала команды (start, help, chatgpt) - они имеют приоритет
+    # 2. Затем chatgpt_router для обработки сообщений в режиме ChatGPT
+    # 3. В конце echo_router для всех остальных сообщений
     dp.include_router(start_router)
     dp.include_router(help_router)
-    dp.include_router(chatgpt_router)
+    dp.include_router(chatgpt_router)  # Должен быть ДО echo_router, чтобы перехватывать сообщения в режиме ChatGPT
     dp.include_router(echo_router)
     
     # Устанавливаем команды меню бота
@@ -97,6 +99,7 @@ async def main() -> None:
         await bot.session.close()
         
         # Закрываем сессию LLM сервиса, если она была создана
+        # Это правильное завершение работы с ресурсами
         from bot.routers.chatgpt import llm_service
         if llm_service:
             await llm_service.close()
