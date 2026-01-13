@@ -46,7 +46,6 @@ python -m src.bot
 # Способ 2
 python -m src.bot.main
 ```
-
 **Почему нельзя запускать файлы напрямую?**
 - Python не сможет найти модули (`ModuleNotFoundError: No module named 'bot'`)
 - Бот должен запускаться как модуль, чтобы правильно настроить пути импорта
