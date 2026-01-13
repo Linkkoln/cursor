@@ -9,12 +9,13 @@
 import logging
 import sys
 import asyncio
+import html
 from typing import Optional, Dict, List
 from aiogram import Router, Bot, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.enums import ChatAction
 from aiogram.filters import Command
-from aiogram.exceptions import TelegramNetworkError, TelegramAPIError
+from aiogram.exceptions import TelegramNetworkError, TelegramAPIError, TelegramBadRequest
 
 # Защита от прямого запуска файла
 if __name__ == "__main__":
@@ -342,10 +343,25 @@ async def chatgpt_handler(message: Message) -> None:
         
         # Удаляем сообщение "Думаю..." и отправляем ответ
         await thinking_message.delete()
-        await message.answer(
-            response,
-            reply_markup=get_chatgpt_menu()
-        )
+        
+        # Экранируем HTML символы в ответе, чтобы Telegram не пытался их парсить
+        # Это нужно, потому что LLM может вернуть код с символами < и >
+        safe_response = html.escape(response)
+        
+        try:
+            await message.answer(
+                safe_response,
+                reply_markup=get_chatgpt_menu()
+            )
+        except TelegramBadRequest as e:
+            # Если всё равно ошибка (например, слишком длинное сообщение)
+            # Отправляем без форматирования
+            logger.warning(f"Ошибка при отправке ответа: {e}. Пробуем без форматирования.")
+            await message.answer(
+                safe_response[:4000],  # Telegram лимит ~4096 символов
+                reply_markup=get_chatgpt_menu(),
+                parse_mode=None  # Отключаем парсинг HTML
+            )
     
     except Exception as e:
         # Останавливаем задачу отправки typing action в случае ошибки
@@ -373,11 +389,12 @@ async def chatgpt_handler(message: Message) -> None:
             # Для других ошибок показываем общее сообщение
             user_message = (
                 f"❌ Произошла ошибка при обращении к AI.\n\n"
-                f"Детали: {error_message}\n\n"
+                f"Детали: {html.escape(error_message)}\n\n"
                 "Попробуйте еще раз или вернитесь в главное меню."
             )
         
         await message.answer(
             user_message,
-            reply_markup=get_chatgpt_menu()
+            reply_markup=get_chatgpt_menu(),
+            parse_mode=None  # Отключаем HTML парсинг для сообщений об ошибках
         )
