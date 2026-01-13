@@ -24,6 +24,8 @@ from bot.routers.start import start_router
 from bot.routers.help import help_router
 from bot.routers.echo import echo_router
 from bot.routers.chatgpt import chatgpt_router
+from bot.routers.tictactoe import tictactoe_router
+from bot.routers.qrcode import qrcode_router
 
 # Настраиваем логирование (запись информации о работе программы)
 # Логи - это как дневник бота: он записывает, что происходит
@@ -60,12 +62,14 @@ async def main() -> None:
     
     # Подключаем роутеры к диспетчеру
     # Порядок ОЧЕНЬ важен: aiogram обрабатывает роутеры сверху вниз
-    # 1. Сначала команды (start, help, chatgpt) - они имеют приоритет
-    # 2. Затем chatgpt_router для обработки сообщений в режиме ChatGPT
+    # 1. Сначала команды (start, help, chatgpt, tictactoe, qrcode) - они имеют приоритет
+    # 2. Затем chatgpt_router и qrcode_router для обработки сообщений в своих режимах
     # 3. В конце echo_router для всех остальных сообщений
     dp.include_router(start_router)
     dp.include_router(help_router)
-    dp.include_router(chatgpt_router)  # Должен быть ДО echo_router, чтобы перехватывать сообщения в режиме ChatGPT
+    dp.include_router(tictactoe_router)  # Крестики-нолики
+    dp.include_router(qrcode_router)     # QR-код генератор
+    dp.include_router(chatgpt_router)    # Должен быть ДО echo_router
     dp.include_router(echo_router)
     
     # Устанавливаем команды меню бота
@@ -75,6 +79,8 @@ async def main() -> None:
         BotCommand(command="start", description="Запустить бота и показать меню"),
         BotCommand(command="help", description="Показать справку по использованию бота"),
         BotCommand(command="chatgpt", description="Активировать режим ChatGPT"),
+        BotCommand(command="tictactoe", description="Играть в крестики-нолики"),
+        BotCommand(command="qrcode", description="Создать QR-код"),
     ]
     await bot.set_my_commands(commands)
     
