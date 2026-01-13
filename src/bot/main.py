@@ -62,14 +62,16 @@ async def main() -> None:
     
     # Подключаем роутеры к диспетчеру
     # Порядок ОЧЕНЬ важен: aiogram обрабатывает роутеры сверху вниз
-    # 1. Сначала команды (start, help, chatgpt, tictactoe, qrcode) - они имеют приоритет
-    # 2. Затем chatgpt_router и qrcode_router для обработки сообщений в своих режимах
-    # 3. В конце echo_router для всех остальных сообщений
+    # 1. Сначала команды (start, help) - они имеют приоритет
+    # 2. Затем игровые роутеры (tictactoe)
+    # 3. chatgpt_router - для обработки сообщений в режиме ChatGPT
+    # 4. qrcode_router - для генерации QR-кодов (после chatgpt, т.к. имеет F.text фильтр)
+    # 5. В конце echo_router для всех остальных сообщений
     dp.include_router(start_router)
     dp.include_router(help_router)
     dp.include_router(tictactoe_router)  # Крестики-нолики
+    dp.include_router(chatgpt_router)    # ChatGPT - должен быть ДО qrcode_router!
     dp.include_router(qrcode_router)     # QR-код генератор
-    dp.include_router(chatgpt_router)    # Должен быть ДО echo_router
     dp.include_router(echo_router)
     
     # Устанавливаем команды меню бота

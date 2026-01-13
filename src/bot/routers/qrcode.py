@@ -82,18 +82,22 @@ async def cmd_cancel(message: Message) -> None:
     )
 
 
-@qrcode_router.message(F.text)
+def _is_waiting_for_qrcode(message: Message) -> bool:
+    """Проверяет, ожидаем ли мы текст для QR-кода от этого пользователя.
+    
+    Используется как фильтр, чтобы не перехватывать сообщения других режимов.
+    """
+    return _waiting_for_text.get(message.from_user.id, False)
+
+
+@qrcode_router.message(F.text, _is_waiting_for_qrcode)
 async def handle_text_for_qrcode(message: Message) -> None:
     """Обработчик текста для создания QR-кода.
     
-    Если пользователь находится в режиме ожидания текста,
-    создаёт QR-код и отправляет картинку.
+    Срабатывает ТОЛЬКО если пользователь находится в режиме ожидания текста.
+    Создаёт QR-код и отправляет картинку.
     """
     user_id = message.from_user.id
-    
-    # Проверяем, ждём ли мы от этого пользователя текст
-    if not _waiting_for_text.get(user_id, False):
-        return  # Не ждём - пропускаем сообщение
     
     # Убираем из списка ожидающих
     del _waiting_for_text[user_id]
