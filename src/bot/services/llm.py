@@ -50,7 +50,12 @@ class LLMService:
         if self.session and not self.session.closed:
             await self.session.close()
     
-    async def get_response(self, user_message: str, conversation_history: Optional[List[Dict[str, str]]] = None) -> str:
+    async def get_response(
+        self, 
+        user_message: str, 
+        conversation_history: Optional[List[Dict[str, str]]] = None,
+        system_prompt: Optional[str] = None
+    ) -> str:
         """Получает ответ от LLM на сообщение пользователя.
         
         При превышении лимита запросов (429) автоматически переключается на следующую бесплатную модель.
@@ -59,6 +64,8 @@ class LLMService:
             user_message: Сообщение пользователя
             conversation_history: История разговора (список сообщений)
                                 Если None, создаётся новый разговор
+            system_prompt: Системный промпт, который определяет поведение модели.
+                          Например, для режима переводчика или ASCII-арт.
         
         Returns:
             str: Ответ от LLM
@@ -71,11 +78,19 @@ class LLMService:
             raise ValueError("OPENROUTER_API_KEY не установлен")
         
         # Подготавливаем историю разговора
-        if conversation_history is None:
-            messages = [{"role": "user", "content": user_message}]
-        else:
-            # Добавляем новое сообщение пользователя в историю
-            messages = conversation_history + [{"role": "user", "content": user_message}]
+        messages = []
+        
+        # Если есть системный промпт, добавляем его первым
+        # Системный промпт говорит модели, как себя вести (как инструкция)
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        
+        # Добавляем историю разговора (если есть)
+        if conversation_history:
+            messages.extend(conversation_history)
+        
+        # Добавляем текущее сообщение пользователя
+        messages.append({"role": "user", "content": user_message})
         
         # Пробуем запросить ответ, при ошибке 429 или таймауте переключаемся на другую модель
         max_attempts = len(self.model_selector.get_all_models())

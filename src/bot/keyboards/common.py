@@ -2,9 +2,13 @@
 
 Клавиатура - это кнопки, которые появляются вместо обычной клавиатуры.
 Это как меню в ресторане: ты видишь кнопки и можешь выбрать, что хочешь.
+
+Есть два типа клавиатур:
+1. ReplyKeyboard - кнопки внизу экрана (вместо обычной клавиатуры)
+2. InlineKeyboard - кнопки прямо под сообщением (более современно)
 """
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-from aiogram.utils.keyboard import ReplyKeyboardBuilder
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 
 
 def get_main_menu() -> ReplyKeyboardMarkup:
@@ -53,16 +57,81 @@ def get_echo_menu() -> ReplyKeyboardMarkup:
 
 
 def get_chatgpt_menu() -> ReplyKeyboardMarkup:
-    """Создаёт меню для режима ChatGPT.
+    """Создаёт меню для режима ChatGPT (когда режим уже выбран).
     
     Returns:
         ReplyKeyboardMarkup: Клавиатура с кнопками для режима ChatGPT
     """
     builder = ReplyKeyboardBuilder()
     
-    # Добавляем кнопку "Назад" для возврата в главное меню
+    # Добавляем кнопку для смены режима и кнопку "Назад"
+    builder.add(KeyboardButton(text="🔄 Сменить режим"))
     builder.add(KeyboardButton(text="⬅️ Назад в меню"))
     
     builder.adjust(1)
     
     return builder.as_markup(resize_keyboard=True)
+
+
+def get_chatgpt_mode_menu() -> ReplyKeyboardMarkup:
+    """Создаёт Reply меню для выбора режима работы ChatGPT (устаревшее).
+    
+    Это как выбор стиля общения:
+    - Обычный режим: отвечает на вопросы как умный помощник
+    - ASCII-арт: рисует картинки символами
+    - Перевод: переводит с русского на английский
+    
+    Returns:
+        ReplyKeyboardMarkup: Клавиатура с кнопками выбора режима
+    """
+    builder = ReplyKeyboardBuilder()
+    
+    # Кнопки для выбора режима работы
+    builder.add(KeyboardButton(text="💬 Обычный режим"))    # Обычный режим ассистента
+    builder.add(KeyboardButton(text="🎨 ASCII-арт"))        # Режим рисования ASCII
+    builder.add(KeyboardButton(text="🌐 Перевод (RU→EN)"))  # Режим перевода
+    builder.add(KeyboardButton(text="⬅️ Назад в меню"))     # Возврат в главное меню
+    
+    # Располагаем кнопки: по одной в строке
+    builder.adjust(1, 1, 1, 1)
+    
+    return builder.as_markup(resize_keyboard=True)
+
+
+def get_chatgpt_mode_inline() -> InlineKeyboardMarkup:
+    """Создаёт Inline клавиатуру для выбора режима работы ChatGPT.
+    
+    Inline клавиатура - это кнопки, которые прикрепляются прямо к сообщению.
+    Это выглядит более современно и не занимает место внизу экрана.
+    
+    Каждая кнопка имеет callback_data - это данные, которые отправляются боту
+    при нажатии кнопки (как секретный код).
+    
+    Returns:
+        InlineKeyboardMarkup: Inline клавиатура с кнопками выбора режима
+    """
+    builder = InlineKeyboardBuilder()
+    
+    # Кнопки для выбора режима работы
+    # callback_data - это "секретный код", который бот получит при нажатии
+    builder.add(InlineKeyboardButton(
+        text="💬 Обычный режим",
+        callback_data="chatgpt_mode:assistant"
+    ))
+    builder.add(InlineKeyboardButton(
+        text="🎨 ASCII-арт",
+        callback_data="chatgpt_mode:ascii_art"
+    ))
+    builder.add(InlineKeyboardButton(
+        text="🌐 Перевод (RU→EN)",
+        callback_data="chatgpt_mode:translator"
+    ))
+    builder.add(InlineKeyboardButton(
+        text="⬅️ Назад в меню",
+        callback_data="chatgpt_mode:back"
+    ))
+    
+    # Располагаем кнопки: по одной в строке
+    builder.adjust(1, 1, 1, 1)
+    
+    return builder.as_markup()
