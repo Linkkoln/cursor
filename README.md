@@ -42,8 +42,6 @@ OPENROUTER_API_KEY=ваш_ключ_от_openrouter
 python -m src.bot
 ```
 
-или
-
 ```bash
 # Способ 2
 python -m src.bot.main
